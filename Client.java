@@ -6,7 +6,6 @@ import java.util.Random;
 import java.util.Scanner;
 
 
-
 public class Client
 {
     String host_name;

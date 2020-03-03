@@ -108,11 +108,21 @@ class ServerConnection extends Thread
             // Check to see that the client is in a room
             // Forward the message to other clients in the "room"
             Message new_m = new Message("Hello from server");
+            System.out.println("HELLO I GOT A MESSAGE");
             return new_m;
         }
         else if (request instanceof IRC) {
             IRC command = ((IRC) request);  // got command from client
             // logic for the returning the command in a message
+            if (command.command.equals("join")){
+                //
+            }
+            if (command.command.equals("list")){
+
+            }
+            if (command.command.equals("connect")){
+                return new Message("hot mess");
+            }
             Message mess = new Message("HOT MESS");
 
             return mess;

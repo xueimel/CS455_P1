@@ -50,6 +50,7 @@ public class Client
             threadIn.start();
 
             while (true) {
+                thread.sleep(500); // IDK WHY, but we need to sleep this in order to get it to work
                 if (ts.hasInput()) {
                     Message m = new Message(ts.getInput());
                     out.writeObject(m);

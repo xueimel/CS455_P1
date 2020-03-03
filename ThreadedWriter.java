@@ -20,7 +20,6 @@ public class ThreadedWriter extends Thread {
         while(true) {
             try {
                 this.object = in.readObject();
-                System.err.println("GOT SOMETHING");
                 newObject = true;
             } catch (IOException | ClassNotFoundException e) {
                 System.out.println('b');

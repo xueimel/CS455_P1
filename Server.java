@@ -8,6 +8,8 @@ import java.net.SocketException;
 import java.util.Map;
 
 public class Server {
+    // TODO: gonna need to make a lock to handle multiple threads adding and removing clients
+    // TODO: Need the 'broadcast' or outgoing message service which deliver to everyone in the room
     private int port;
     private Map names; // Nickname: IP...or reverse
     private Map rooms; // Room: [participants]

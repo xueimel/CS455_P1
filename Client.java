@@ -51,12 +51,12 @@ public class Client
 
             while (true) {
                 thread.sleep(500); // IDK WHY, but we need to sleep this in order to get it to work
-                if (ts.hasInput()) {
+                if (ts.hasInput()) { // TODO some of this logic could be replaced by using locks.
                     Message m = new Message(ts.getInput());
                     out.writeObject(m);
                     out.flush();
                 }
-                if (dickens.newObject()) {
+                if (dickens.newObject()) {// TODO some of this logic could be replaced by using locks.
                     obj = dickens.getObject();
                     if (obj instanceof Message) {
                         // Needs to handle message transition and user stdin (THREAD?)

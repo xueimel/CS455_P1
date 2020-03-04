@@ -9,8 +9,10 @@ public class ThreadedWriter extends Thread {
     private ObjectInputStream in;
     private boolean newObject = false;
 
+
     public ThreadedWriter(Socket conn, ObjectInputStream in){
 //        try {
+        setPriority(NORM_PRIORITY - 1);
         this.sock = conn;
         this.in = in;
 //            in = new ObjectInputStream(conn.getInputStream());
@@ -22,7 +24,7 @@ public class ThreadedWriter extends Thread {
                 this.object = in.readObject();
                 newObject = true;
             } catch (IOException | ClassNotFoundException e) {
-                System.out.println('b');
+                System.out.println(e);
             }
         }
     }

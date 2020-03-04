@@ -11,7 +11,7 @@ public class ThreadedReader implements Runnable{
         while(true) {
             if (darkly.hasNextLine()) {
                 input = true;
-                darkly.nextLine();
+                ret_val = darkly.nextLine();
             }
         }
     }

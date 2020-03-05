@@ -52,10 +52,18 @@ public class Client
             while (true) {
                 thread.sleep(500); // IDK WHY, but we need to sleep this in order to get it to work
                 if (ts.hasInput()) { // TODO some of this logic could be replaced by using locks.
-                    Message m = new Message(ts.getInput());
-                    out.writeObject(m);
-                    out.flush();
+                    String input = ts.getInput();
+                    if (input.contains("/")){
+                        IRC comm = new IRC(input);
+                        out.writeObject(comm);
+                        out.flush();
+                    }else{
+                        Message mess = new Message(ts.getInput());
+                        out.writeObject(mess);
+                        out.flush();
+                    }
                 }
+
                 if (dickens.newObject()) {// TODO some of this logic could be replaced by using locks.
                     obj = dickens.getObject();
                     if (obj instanceof Message) {

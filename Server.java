@@ -1,23 +1,19 @@
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.Map;
+import java.util.*;
 
 public class Server {
-    // TODO:
-    /* TODO: Finish the 'broadcast' or outgoing message service which deliver to everyone in their room. Pretty sure
-    that we need to map the outgoing streams to the clients in the rooms */
     private int port;
-    public static Map names; // Nickname: IP...or reverse
-    public static Map rooms; // Room: [participants]
+    public Map names; // Nickname: IP...or reverse
+    public Map rooms; // Room: [participants]
+    public Map clients;
     private static ServerSocket ss;
 
     public Server(int port) throws IOException {
-        names = Collections.synchronizedMap(new HashMap<String, String>());
-        rooms = Collections.synchronizedMap(new HashMap<String, LinkedList<ObjectOutputStream>>());
+        names = Collections.synchronizedMap(new HashMap<Socket, String>());
+        rooms = Collections.synchronizedMap(new HashMap<String, LinkedList<Socket>>());
+        clients = Collections.synchronizedMap(new HashMap<Socket, ObjectOutputStream>());
         this.port = port;
         ss = new ServerSocket(port);
         System.out.println("starting server\n");
@@ -31,20 +27,14 @@ public class Server {
         try {
             while (true) {
                 client = ss.accept();
-                names.put(client.getInetAddress(), null);
-//                if (rooms.get('a') == null){
-//                    rooms.put('a', new LinkedList<Socket>());
-//                }
-//                LinkedList list = (LinkedList) rooms.get('a');
-//                list.add(client);
-//                rooms.put('a', list);
-//                rooms.put('a', client.getInetAddress());
+                names.put(client, null);
                 new ServerConnection(client, this).start();
             }
         } catch (IOException e) {
             System.err.println(e);
         }
     }
+
 
     public static void main(String args[]) {
         if (args.length < 1 || args.length > 2) {
@@ -61,13 +51,14 @@ public class Server {
     }
 }
 
+
 class ServerConnection extends Thread
 {
     private Socket client;
     private Server waiter;
 
-    ServerConnection(Socket client, Server guy){
-        this.waiter = guy;
+    ServerConnection(Socket client, Server server){
+        this.waiter = server;
         this.client = client;
         setPriority(NORM_PRIORITY - 1);
     }
@@ -76,20 +67,11 @@ class ServerConnection extends Thread
         try {
             ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(client.getInputStream());
-            if (waiter.rooms.get('a') == null){
-                waiter.rooms.put('a', new LinkedList<ObjectOutputStream>());
-            }
-            LinkedList list = (LinkedList) waiter.rooms.get('a');
-            list.add(out);
-            waiter.rooms.put('a', list);
+
+            waiter.clients.put(client, out);
             System.out.println("Connection with client " + client.getInetAddress().getHostAddress());
             out.writeObject(new Message("CONNECTED TO THE SERVER")); // if you remove this, the output stream fails
             while (true) {
-                //an if statment could be here from the clients room
-                // I THINK THIS MAY BE A PROBLEM IN SPECIFYING THAT THE OBJECT SHOULD ONLY GO TO X RECIPIENTS.
-                // PERHAPS JUST GIVING THEM A NULL IF THEY ARE NOT IN THE ROOM A MESSAGE WAS MEANT FOR
-//                out.writeObject(processRequest(in.readObject(), client, out));
-//                out.flush();
                 makeNoise(in.readObject(), client);
             }
         } catch (EOFException e) { // Normal EOF
@@ -105,59 +87,136 @@ class ServerConnection extends Thread
         }
     }
 
-    private void makeNoise(Object obj, Socket client)throws ClassNotFoundException{ //If i hand it in, it doesn't write. If I try to make a new 'out' it throws exception
-        //If i hand 'out' in, it doesn't write. If I try to make a new 'out' it throws exception
-        System.out.println("GOT AN OBJECT FROM: " + client.getInetAddress());
-        try {
-            if (obj instanceof Message) { // got message from client
-                Message mess = ((Message) obj);
-                LinkedList list = (LinkedList) waiter.rooms.get('a');
-                for (int i = 0; i < list.size(); i++) {
-                    ObjectOutputStream out = (ObjectOutputStream) list.get(i);
-                    out.writeObject(new Message(mess.getString()));
-                    out.flush();
-                }
 
-//            System.out.println(message.getString());
+    private boolean inRoom(Socket client){
+        for (Object mapElement: waiter.rooms.keySet()){
+            LinkedList thing = (LinkedList) waiter.rooms.get(mapElement);
+            for (Object s: thing) {
+                if (s==client){
+                    System.out.println("CLIENT IN A ROOM");
+                    return true;
+                }
             }
-            else{
-                System.out.println("NOT MESSAGE");
-            }
-        }catch (IOException e){
-            System.err.println("MAKE NOISE ERROR" + e );
         }
+        return false;
     }
 
-    private Object processRequest(Object request, Socket client, ObjectOutputStream out) {
-        if (request instanceof Message) { // got message from client
-            Message mess = ((Message) request);
-            // Handle logic for message.
-            // Check to see that the client is in a room
-            // Forward the message to other clients in the "room"
-            Message new_m = new Message("Hello from server");
-            System.out.println("HELLO I GOT A MESSAGE");
 
-//            makeNoise(mess, client, out);
-            return new_m;
+    private void makeNoise(Object obj, Socket client) throws ClassNotFoundException{
+        System.out.println("GOT AN OBJECT FROM: " + client);
+        try {
+            if (obj instanceof Message) { // got message from client
+                System.out.println("GOT A MESSAGE FROM " + client);
+                Message mess = ((Message) obj);
+                boolean roomCheck = inRoom(client);
+
+                if (roomCheck) {
+                    LinkedList list = (LinkedList) waiter.rooms.get("a"); //TODO
+
+                    for (int i = 0; i < list.size(); i++) {
+                        if (client != list.get(i)) {
+                            ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
+                            out.writeObject(new Message(mess.getString()));
+                            out.flush();
+                        }
+                    }
+                }
+                else{
+                    ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
+                    out.writeObject(new Message("YOU MUST JOIN A ROOM TO ENTER A MESSAGE"));
+                    out.flush();
+                }
+            }
+            else if (obj instanceof IRC) {
+                System.out.println("GOT AN IRC COMMAND FROM " + client);
+                ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
+                IRC command = ((IRC) obj);  // got command from client
+                System.out.println("COMMAND " + command.command);
+
+
+                if (command.command.contains("/join")){
+                    boolean in = inRoom(client);
+                    if (!in) { // make sure the client is only in one room.
+                        Message m;
+                        String room = command.command.split(" ")[1]; //TODO will throw an array exception if no room given
+
+                        if (waiter.rooms.get(room) == null) { // make room if it doesnt exist
+                            waiter.rooms.put(room, new LinkedList<Socket>());
+                            m = new Message("Room " + room + " was created");
+                        } else {
+                            m = new Message("You have joined " + room);
+                        }
+
+                        // reformat the rooms list
+                        LinkedList list = (LinkedList) waiter.rooms.get(room);
+                        list.add(client);
+                        waiter.rooms.put(room, list);
+                        out.writeObject(m);
+                        out.flush();
+                    }
+                    else{
+                        System.err.println("CLIENT ATTEMPT TO ENTER MULTIPLE ROOMS");
+                        out.writeObject(new Message("YOU MUST EXIT THE CURRENT ROOM BEFORE JOINING ANOTHER"));
+                        out.flush();
+                    }
+                }
+                else if (command.command.contains("/leave")) {
+                    Message m;
+                    String room = command.command.split(" ")[1]; //TODO will throw an array exception if no room given
+
+                    boolean inTheRoom = false;
+                    for (Object mapElement: waiter.rooms.keySet()){ // make sure client in the given room
+                            System.err.println("MAP ELEM " + mapElement.toString());
+                        if (mapElement.toString().equals(room)) {
+                            inTheRoom = true;
+                        }
+                    }
+                    if (inTheRoom){
+                        //TODO Test
+                        LinkedList list = (LinkedList) waiter.rooms.get(room);
+                        list.remove(client);
+                        waiter.rooms.put(room, list);
+                        out.writeObject("YOU HAVE SUCCESSFULLY LEFT "+ room);
+                        out.flush();
+                    }
+                    else{
+                        out.writeObject(new Message("YOU ARE NOT CURRENTLY IN THE ROOM YOU SPECIFIED"));
+                        out.flush();
+                    }
+                }
+                else if (command.command.contains("/list")){
+                    System.out.println("LISTING ROOMS FOR " + client);
+                    Message m = new Message(waiter.rooms.keySet().toString());
+                    out.writeObject(m);
+                    out.flush();
+                }
+                else if (command.command.contains("/connect")) {
+                    //TODO MAYBE ADJUST THIS
+                    System.out.println("CLIENT ATTEMPTING A RECONNECT " + client);
+                    out.writeObject("YOU'RE ALREADY CONNECTED OLD CHAP");
+                    out.flush();
+                }
+                else if (command.command.contains("/nick")){
+                    //TODO
+                    System.out.println("CLIENT ATTEMPTING TO ADD/ALTER NICKNAME " + client);
+                }
+                else if (command.command.contains("/quit")) {
+                    //TODO
+                    System.out.println("CLIENT QUITING " + client);
+                }
+                else if (command.command.contains("/stats")) {
+                    //TODO
+                }
+                else{
+                    System.err.println("CLIENT " + client + " GAVE A BAD COMMAND " + "\""+command.command+"\"");
+                }
+            }
+            else{
+                System.err.println("NOT MESSAGE or IRC");
+            }
+        }catch (IOException e){
+            System.err.println("HOLY HELL THAT SHOULDN'T HAVE HAPPENED" + e );
         }
-        else if (request instanceof IRC) {
-            IRC command = ((IRC) request);  // got command from client
-            // logic for the returning the command in a message
-            if (command.command.equals("join")){
-                //
-            }
-            if (command.command.equals("list")){
-
-            }
-            if (command.command.equals("connect")){
-                return new Message("hot mess");
-            }
-            Message mess = new Message("HOT MESS");
-
-            return mess;
-        }
-        else
-            return null;
     }
 }
 

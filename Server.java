@@ -110,23 +110,8 @@ class ServerConnection extends Thread
                 System.out.println("GOT A MESSAGE FROM " + client);
                 Message mess = ((Message) obj);
                 boolean roomCheck = inRoom(client);
-                //not needed?
-                // //if there is no rooms tell the user to make a room
-                // if(waiter.rooms.values().isEmpty() && !mess.getString().contains("startRoom")){
-                //     ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
-                //     out.writeObject(new Message("NO ROOMS OPEN! CREATE A ROOM: startRoom <room name>" ));
-                //     out.flush();
-                // }
-                // else if(mess.getString().contains("startRoom")){
-                //     String s = mess.getString().substring(10);
-                //     ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
-                //     out.writeObject(new Message("ROOM CREATED! ROOM NAME:" + s ));
-                //     //need to actually create room 
-
-                // }
-                //else{
-                    if (roomCheck) {
-                        LinkedList list = (LinkedList) waiter.rooms.keySet(); //TODO
+                    if (roomCheck) { //TODO: Faults after joined new room and writing a message
+                        LinkedList list = (LinkedList) waiter.rooms.values(); //TODO
                         for (int i = 0; i < list.size(); i++) {
                             if (client != list.get(i)) {
                                 ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
@@ -229,12 +214,13 @@ class ServerConnection extends Thread
                 else if (command.command.contains("/connect")) {
                     //TODO MAYBE ADJUST THIS
                     System.out.println("CLIENT ATTEMPTING A RECONNECT " + client);
-                    out.writeObject("YOU'RE ALREADY CONNECTED OLD CHAP");
+                    out.writeObject(new Message("YOU'RE ALREADY CONNECTED OLD CHAP"));
                     out.flush();
                 }
                 else if (command.command.contains("/nick")){
                     //TODO
                     System.out.println("CLIENT ATTEMPTING TO ADD/ALTER NICKNAME " + client);
+                    
                 }
                 else if (command.command.contains("/quit")) {
                     //TODO
@@ -245,6 +231,8 @@ class ServerConnection extends Thread
                 }
                 else{
                     System.err.println("CLIENT " + client + " GAVE A BAD COMMAND " + "\""+command.command+"\"");
+                    out.writeObject(new Message("INVALID COMMAND GIVEN"));
+                    out.flush();
                 }
             }
             else{

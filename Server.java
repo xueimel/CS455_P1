@@ -70,6 +70,7 @@ class ServerConnection extends Thread
 
             waiter.clients.put(client, out);
             System.out.println("Connection with client " + client.getInetAddress().getHostAddress());
+            //should take input stream to check what the IRC command is
             out.writeObject(new Message("CONNECTED TO THE SERVER")); // if you remove this, the output stream fails
             while (true) {
                 makeNoise(in.readObject(), client);
@@ -109,23 +110,38 @@ class ServerConnection extends Thread
                 System.out.println("GOT A MESSAGE FROM " + client);
                 Message mess = ((Message) obj);
                 boolean roomCheck = inRoom(client);
+                //not needed?
+                // //if there is no rooms tell the user to make a room
+                // if(waiter.rooms.values().isEmpty() && !mess.getString().contains("startRoom")){
+                //     ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
+                //     out.writeObject(new Message("NO ROOMS OPEN! CREATE A ROOM: startRoom <room name>" ));
+                //     out.flush();
+                // }
+                // else if(mess.getString().contains("startRoom")){
+                //     String s = mess.getString().substring(10);
+                //     ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
+                //     out.writeObject(new Message("ROOM CREATED! ROOM NAME:" + s ));
+                //     //need to actually create room 
 
-                if (roomCheck) {
-                    LinkedList list = (LinkedList) waiter.rooms.get("a"); //TODO
-
-                    for (int i = 0; i < list.size(); i++) {
-                        if (client != list.get(i)) {
-                            ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
-                            out.writeObject(new Message(mess.getString()));
-                            out.flush();
+                // }
+                //else{
+                    if (roomCheck) {
+                        LinkedList list = (LinkedList) waiter.rooms.get("a"); //TODO
+                        for (int i = 0; i < list.size(); i++) {
+                            if (client != list.get(i)) {
+                                ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
+                                out.writeObject(new Message(client.getInetAddress()+ ":" + mess.getString()));
+                                out.flush();
+                            }
                         }
                     }
-                }
-                else{
-                    ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
-                    out.writeObject(new Message("YOU MUST JOIN A ROOM TO ENTER A MESSAGE"));
-                    out.flush();
-                }
+                    else{
+                        ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
+                        out.writeObject(new Message(client.getInetAddress() + ":YOU MUST JOIN A ROOM TO ENTER A MESSAGE [/join <room name>]" ));
+                        
+                        out.flush();
+                    }
+               //}
             }
             else if (obj instanceof IRC) {
                 System.out.println("GOT AN IRC COMMAND FROM " + client);
@@ -134,25 +150,34 @@ class ServerConnection extends Thread
                 System.out.println("COMMAND " + command.command);
 
 
+
                 if (command.command.contains("/join")){
                     boolean in = inRoom(client);
                     if (!in) { // make sure the client is only in one room.
                         Message m;
-                        String room = command.command.split(" ")[1]; //TODO will throw an array exception if no room given
-
-                        if (waiter.rooms.get(room) == null) { // make room if it doesnt exist
-                            waiter.rooms.put(room, new LinkedList<Socket>());
-                            m = new Message("Room " + room + " was created");
-                        } else {
-                            m = new Message("You have joined " + room);
+                        //TODO: Dont throw execption with empty room parameter: COMPLETED
+                        String room = command.command.substring(5);
+                        if (room.length()<1)
+                        {
+                            m = new Message("INVALID ROOM NAME: " + room);
+                            out.writeObject(m);
+                            out.flush();
                         }
-
+                        else{
+                            if (waiter.rooms.get(room) == null) { // make room if it doesnt exist
+                                waiter.rooms.put(room, new LinkedList<Socket>());
+                                m = new Message("Room " + room + " was created");
+                            } else {
+                                m = new Message("You have joined " + room);
+                            }
+                        
                         // reformat the rooms list
                         LinkedList list = (LinkedList) waiter.rooms.get(room);
                         list.add(client);
                         waiter.rooms.put(room, list);
                         out.writeObject(m);
                         out.flush();
+                        }
                     }
                     else{
                         System.err.println("CLIENT ATTEMPT TO ENTER MULTIPLE ROOMS");

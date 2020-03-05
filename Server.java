@@ -126,7 +126,7 @@ class ServerConnection extends Thread
                 // }
                 //else{
                     if (roomCheck) {
-                        LinkedList list = (LinkedList) waiter.rooms.get("a"); //TODO
+                        LinkedList list = (LinkedList) waiter.rooms.keySet(); //TODO
                         for (int i = 0; i < list.size(); i++) {
                             if (client != list.get(i)) {
                                 ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
@@ -141,15 +141,13 @@ class ServerConnection extends Thread
                         
                         out.flush();
                     }
-               //}
+                    //}
             }
             else if (obj instanceof IRC) {
                 System.out.println("GOT AN IRC COMMAND FROM " + client);
                 ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
                 IRC command = ((IRC) obj);  // got command from client
                 System.out.println("COMMAND " + command.command);
-
-
 
                 if (command.command.contains("/join")){
                     boolean in = inRoom(client);
@@ -166,7 +164,7 @@ class ServerConnection extends Thread
                         else{
                             if (waiter.rooms.get(room) == null) { // make room if it doesnt exist
                                 waiter.rooms.put(room, new LinkedList<Socket>());
-                                m = new Message("Room " + room + " was created");
+                                m = new Message("Room " + room + " was created and joined");
                             } else {
                                 m = new Message("You have joined " + room);
                             }
@@ -187,26 +185,39 @@ class ServerConnection extends Thread
                 }
                 else if (command.command.contains("/leave")) {
                     Message m;
-                    String room = command.command.split(" ")[1]; //TODO will throw an array exception if no room given
-
-                    boolean inTheRoom = false;
-                    for (Object mapElement: waiter.rooms.keySet()){ // make sure client in the given room
-                            System.err.println("MAP ELEM " + mapElement.toString());
-                        if (mapElement.toString().equals(room)) {
-                            inTheRoom = true;
-                        }
-                    }
-                    if (inTheRoom){
-                        //TODO Test
-                        LinkedList list = (LinkedList) waiter.rooms.get(room);
-                        list.remove(client);
-                        waiter.rooms.put(room, list);
-                        out.writeObject("YOU HAVE SUCCESSFULLY LEFT "+ room);
+                    //its better to just find the room from the client infromation but alright
+                    //String room = command.command.split(" ")[1]; //TODO will throw an array exception if no room given
+                    String room = command.command.substring(6);
+                    if (room.length()<1)
+                    {
+                        m = new Message("INVALID ROOM NAME: " + room);
+                        out.writeObject(m);
                         out.flush();
                     }
                     else{
-                        out.writeObject(new Message("YOU ARE NOT CURRENTLY IN THE ROOM YOU SPECIFIED"));
-                        out.flush();
+                        boolean inTheRoom = false;
+                        for (Object mapElement: waiter.rooms.keySet()){ // make sure client in the given room
+                                System.err.println("MAP ELEM " + mapElement.toString());
+                            if (mapElement.toString().equals(room)) {
+                                inTheRoom = true;
+                            }
+                        }
+                        System.out.println(inTheRoom);
+                        if (inTheRoom){
+                            //TODO Test
+                            LinkedList list = (LinkedList) waiter.rooms.get(room);
+                            System.out.println(list);
+                            System.out.println(client);
+                            list.remove(client); 
+                            waiter.rooms.put(room, list);
+
+                            out.writeObject(new Message("YOU HAVE SUCCESSFULLY LEFT THE ROOM"));
+                            out.flush();
+                        }
+                        else{
+                            out.writeObject(new Message("YOU ARE NOT CURRENTLY IN THE ROOM YOU SPECIFIED"));
+                            out.flush();
+                        }
                     }
                 }
                 else if (command.command.contains("/list")){

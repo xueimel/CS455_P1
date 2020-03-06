@@ -19,10 +19,11 @@ public class Client
         try {
             //ask client to connect --IRC
             scan= new Scanner(System.in);
-            System.out.println("Use \\connect <servername> command to start");
-            String x = scan.nextLine();
+            System.out.println("Use \"/connect <servername>\" command to start ChatService");
+            //TODO Check to see if they actually used /connect
+//            host_name = scan.nextLine().trim().substring(8); // TODO STRUGGLING TO GET THE SOCKET TO ACCEPT USING THIS
 
-            IRC request_conn = new IRC(x); // Setup IRC
+            IRC request_conn = new IRC("/connect "+host_name); // Setup IRC
             // sysout ctrl-spc
 
             Socket connection = new Socket(host_name, port);
@@ -82,14 +83,15 @@ public class Client
         }
     }
     public static void main(String args[]) {
-        if (args.length < 1 || args.length > 2) {
-            System.err.println("Usage: java Client <serverHost> <port#>"); // local host
+        System.out.println(args.length);
+        if (args.length != 2) {
+            System.err.println("Usage: java Client <servername> <port#>"); // local host
             System.exit(1);
         }
 
         try {
             Client client = new Client(args[0], Integer.parseInt(args[1]));
-
+            //TODO Add client.run()
         } catch (NumberFormatException | InterruptedException e) {
             // TODO Auto-generated catch block
             e.printStackTrace();

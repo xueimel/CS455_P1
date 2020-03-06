@@ -8,6 +8,7 @@ public class Server {
     public Map names; // Nickname: IP...or reverse
     public Map rooms; // Room: [participants]
     public Map clients;
+    public boolean inServer = false;
     private static ServerSocket ss;
 
     public Server(int port) throws IOException {
@@ -56,7 +57,7 @@ class ServerConnection extends Thread
 {
     private Socket client;
     private Server waiter;
-
+    Boolean inServer = false;
     ServerConnection(Socket client, Server server){
         this.waiter = server;
         this.client = client;
@@ -70,8 +71,7 @@ class ServerConnection extends Thread
 
             waiter.clients.put(client, out);
             System.out.println("Connection with client " + client.getInetAddress().getHostAddress());
-            //should take input stream to check what the IRC command is
-            out.writeObject(new Message("CONNECTED TO THE SERVER")); // if you remove this, the output stream fails
+
             while (true) {
                 makeNoise(in.readObject(), client);
             }
@@ -106,25 +106,46 @@ class ServerConnection extends Thread
     private void makeNoise(Object obj, Socket client) throws ClassNotFoundException{
         System.out.println("GOT AN OBJECT FROM: " + client);
         try {
+            //this is causing an error to be thrown
+            //line 120
             if (obj instanceof Message) { // got message from client
                 System.out.println("GOT A MESSAGE FROM " + client);
                 Message mess = ((Message) obj);
                 boolean roomCheck = inRoom(client);
                     if (roomCheck) { //TODO: Faults after joined new room and writing a message
-                        LinkedList list = (LinkedList) waiter.rooms.values(); //TODO
-                        for (int i = 0; i < list.size(); i++) {
-                            if (client != list.get(i)) {
-                                ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
-                                out.writeObject(new Message(client.getInetAddress()+ ":" + mess.getString()));
-                                out.flush();
+
+                        for (Object mapElement: waiter.rooms.keySet()){
+                            LinkedList thing = (LinkedList) waiter.rooms.get(mapElement);
+                            for (Object s: thing) {
+                                if (s!=client){
+                                    ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(mapElement);
+                                    out.writeObject(new Message(client.getInetAddress()+ ":" + mess.getString()));
+                                    out.flush();
+                                }
                             }
                         }
+                        // LinkedList list = (LinkedList) waiter.rooms.values(); //TODO
+                        // for (int i = 0; i < list.size(); i++) {
+                        //     if (client != list.get(i)) {
+                        //         ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(list.get(i));
+                        //         out.writeObject(new Message(client.getInetAddress()+ ":" + mess.getString()));
+                        //         out.flush();
+                        //     }
+                        // }
                     }
                     else{
+                        //if the user isnt connected to a server yet go to /command execution
+                        //this could cause issues if someone tried to join a room before they connect to the server
                         ObjectOutputStream out = (ObjectOutputStream) waiter.clients.get(client);
-                        out.writeObject(new Message(client.getInetAddress() + ":YOU MUST JOIN A ROOM TO ENTER A MESSAGE [/join <room name>]" ));
                         
+                        if(inServer){
+                        out.writeObject(new Message(client.getInetAddress() + ":YOU MUST JOIN A ROOM TO ENTER A MESSAGE [/join <room name>]" ));  
                         out.flush();
+                        }
+                        else{
+                            out.writeObject(new Message(client.getInetAddress() + "Use /connect <servername> command to start" ));  
+                            out.flush();
+                        }
                     }
                     //}
             }
@@ -207,20 +228,35 @@ class ServerConnection extends Thread
                 }
                 else if (command.command.contains("/list")){
                     System.out.println("LISTING ROOMS FOR " + client);
+                    //get rooms 
+
+                    //for each room 
+                    //LinkedList l = waiter.rooms.keySet();
+                        //count how many users
+                            // similar to how it is done in messenger 
+                    //you might have to make a for each loop that is able to go t
+                    // through the  room names and users to add them to an array to print out
                     Message m = new Message(waiter.rooms.keySet().toString());
                     out.writeObject(m);
                     out.flush();
                 }
                 else if (command.command.contains("/connect")) {
-                    //TODO MAYBE ADJUST THIS
+                    if(inServer == false){
+                        System.out.println("CLIENT ATTEMPTING A CONNECT " + client);
+                        out.writeObject(new Message("YOU HAVE CONNECTED TO SERVER"));
+                        inServer = true;
+                        
+                    }
+                    else{ //IM A FEATRUE NOT A BUG
                     System.out.println("CLIENT ATTEMPTING A RECONNECT " + client);
-                    out.writeObject(new Message("YOU'RE ALREADY CONNECTED OLD CHAP"));
+                    out.writeObject(new Message("CONNECTED!"));
+                    }
                     out.flush();
                 }
                 else if (command.command.contains("/nick")){
                     //TODO
                     System.out.println("CLIENT ATTEMPTING TO ADD/ALTER NICKNAME " + client);
-                    
+
                 }
                 else if (command.command.contains("/quit")) {
                     //TODO

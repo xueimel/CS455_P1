@@ -54,8 +54,14 @@ public class Client
                     String input = ts.getInput();
                     if (input.contains("/")){
                         IRC comm = new IRC(input);
-                        out.writeObject(comm);
-                        out.flush();
+                        if (comm.command.equals("/quit")){
+                            out.writeObject(comm);
+                            out.flush();
+                            thread.join(); // TODO gonna need to kill this
+                            threadIn.join(); // TODO gonna need to kill this
+                            connection.close();
+                            break;
+                        }
                     }else{
                         Message mess = new Message(ts.getInput());
                         out.writeObject(mess);
@@ -68,14 +74,17 @@ public class Client
                     if (obj instanceof Message) {
                         // Needs to handle message transition and user stdin (THREAD?)
                         Message mess = ((Message) obj);
+                        if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")){
+                            break;
+                        }
                         System.out.println(mess.getString());
                     }
                 }
-//                thread.join();
-//                threadIn.join();
             }
+
+            System.out.println("END");
         } catch (IOException e) {
-            System.out.println("I/O error " + e); // I/O error
+            System.out.println("Server does not exist or could not connect" + e); // I/O error
         } catch (ClassNotFoundException e2) {
             System.out.println(e2); // Unknown type of response object
         }

@@ -1,3 +1,5 @@
+import com.sun.org.apache.xpath.internal.SourceTree;
+
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -74,10 +76,10 @@ class ServerConnection extends Thread
             waiter.clients.put(client, out);
             //TODO take input on client side to make them actually type in the connection.
             System.out.println("Connection with client " + client.getInetAddress().getHostAddress());
-            out.writeObject(new Message("Client Running")); //if you remove this line, the output stream will fail ahead.
+            out.writeObject(new Message("Contacting Server")); //if you remove this line, the output stream will fail ahead.
 
             while (true) {
-                makeNoise(in.readObject(), client);
+                handleClientObject(in.readObject(), client);
             }
         } catch (EOFException e) { // Normal EOF
             try {
@@ -92,6 +94,21 @@ class ServerConnection extends Thread
         }
     }
 
+    private String getRoom(Socket client){
+        int index=0;
+        for (Object mapElement: waiter.rooms.keySet()){
+            LinkedList thing = (LinkedList) waiter.rooms.get(mapElement);
+            for (Object potentialClient: thing) {
+                if (potentialClient==client){
+                    System.out.println("CLIENT IN A ROOM");
+                    return (String) waiter.rooms.get(index);
+                }
+                index++;
+            }
+        }
+        System.err.println("CLIENT WAS NOT ABLE TO BE LOCATED IN A ROOM");
+        return "Client not in room";
+    }
 
     private boolean inRoom(Socket client){
         for (Object mapElement: waiter.rooms.keySet()){
@@ -118,7 +135,7 @@ class ServerConnection extends Thread
         return "Anonymous";
     }
 
-    private void makeNoise(Object obj, Socket client) throws ClassNotFoundException{
+    private void handleClientObject(Object obj, Socket client){
         System.out.println("GOT AN OBJECT FROM: " + client);
         try {
             if (obj instanceof Message) { // got message from client
@@ -263,19 +280,38 @@ class ServerConnection extends Thread
                     }
                 }
                 else if (command.command.contains("/quit")) {
-                    //TODO
+                    waiter.names.remove(getClientNick(client));
+                    System.out.println("CLIENT REMOVED FROM NAMES");
+                    //TODO remove client from room
+//                    String room = getRoom(client);
+                    if(inRoom(client)) { //If client in room
+                        String room = (String) waiter.clientRoom.get(client);
+                        waiter.clientRoom.remove(client);
+                        System.out.println("ROOM BEFORE ATTEMPTING REMOVE " + waiter.rooms.get(room));
+                        LinkedList roomList = (LinkedList) waiter.rooms.get(room);
+                        roomList.remove(client);
+                        System.out.println("REMOVED CLIENT FROM ROOM");
+                        System.out.println("ROOM AFTER ATTEMPTING REMOVE " + waiter.rooms.get(room));
+                        waiter.rooms.put(room, roomList);
+                    }
+                    out.writeObject(new Message("YOU HAVE SUCCESSFULLY QUIT"));
+                    out.flush();
+                    //disconnect socket
+//                    client.close(); TODO once client side is figured out, should be able to do this
                     System.out.println("CLIENT QUITING " + client);
                 }
                 else if (command.command.contains("/stats")) {
-                    //TODO
-
+                    //TODO print off len list in rooms
+                    //num of clients connected
+                    //potentially timer stats
+                    //maybe counter for num of times messages received
                 }
                 else{
                     System.err.println("CLIENT " + client + " GAVE A BAD COMMAND " + "\""+command.command+"\"");
                 }
             }
             else{
-                System.err.println("NOT MESSAGE or IRC");
+                System.err.println("OBJECT FROM "+ client+ " WAS NOT MESSAGE or IRC COMMAND. OBJECT WAS: " + obj.getClass());
             }
         }catch (IOException e){
             System.err.println("HOLY HELL THAT SHOULDN'T HAVE HAPPENED" + e );

@@ -7,21 +7,19 @@ import java.util.Scanner;
 
 public class Client
 {
-    String host_name;
+    private static String host_name;
     Scanner scan;
     int port;
 
 
     public Client(String host_name, int port) throws InterruptedException{
-        this.host_name = host_name;
         this.port = port;
 
         try {
             //ask client to connect --IRC
             scan= new Scanner(System.in);
             System.out.println("Use \"/connect <servername>\" command to start ChatService");
-            //TODO Check to see if they actually used /connect
-//            host_name = scan.nextLine().trim().substring(8); // TODO STRUGGLING TO GET THE SOCKET TO ACCEPT USING THIS
+            host_name = scan.nextLine().substring(9);
 
             IRC request_conn = new IRC("/connect "+host_name); // Setup IRC
             // sysout ctrl-spc

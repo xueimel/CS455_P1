@@ -10,6 +10,7 @@ public class Client
     private static String host_name;
     Scanner scan;
     int port;
+    Object lock = new Object();
 
 
     public Client(String host_name, int port) throws InterruptedException{
@@ -41,36 +42,44 @@ public class Client
                 System.exit(-1);
             }
 
-            ThreadedWriter dickens = new ThreadedWriter(connection, in);
-            ThreadedReader ts = new ThreadedReader();
-            Thread thread = new Thread(ts);
+            ThreadedWriter writer = new ThreadedWriter(connection, in);
+            ThreadedReader reader = new ThreadedReader();
+            Thread thread = new Thread(reader);
             thread.start();
-            Thread threadIn = new Thread(dickens);
+            Thread threadIn = new Thread(writer);
             threadIn.start();
 
             while (true) {
                 thread.sleep(500); // IDK WHY, but we need to sleep this in order to get it to work
-                if (ts.hasInput()) { // TODO some of this logic could be replaced by using locks.
-                    String input = ts.getInput();
+                if (reader.hasInput()) { // TODO some of this logic could be replaced by using locks.
+                    String input = reader.getInput();
                     if (input.contains("/")){
                         IRC comm = new IRC(input);
                         if (comm.command.equals("/quit")){
                             out.writeObject(comm);
                             out.flush();
-                            thread.join(); // TODO gonna need to kill this
-                            threadIn.join(); // TODO gonna need to kill this
+                            thread.sleep(500);
+                            Message finalMess = (Message)writer.getObject();
+                            System.out.println(finalMess.getString());
+                            reader.kill();
+                            thread.interrupt();
+                            writer.kill();
                             connection.close();
                             break;
                         }
+                        else{
+                            out.writeObject(comm);
+                            out.flush();
+                        }
                     }else{
-                        Message mess = new Message(ts.getInput());
+                        Message mess = new Message(reader.getInput());
                         out.writeObject(mess);
                         out.flush();
                     }
                 }
 
-                if (dickens.newObject()) {// TODO some of this logic could be replaced by using locks.
-                    obj = dickens.getObject();
+                if (writer.newObject()) {// TODO some of this logic could be replaced by using locks.
+                    obj = writer.getObject();
                     if (obj instanceof Message) {
                         // Needs to handle message transition and user stdin (THREAD?)
                         Message mess = ((Message) obj);
@@ -83,6 +92,8 @@ public class Client
             }
 
             System.out.println("END");
+
+            System.exit(0); //hack because I cant get the threadedReader to close
         } catch (IOException e) {
             System.out.println("Server does not exist or could not connect" + e); // I/O error
         } catch (ClassNotFoundException e2) {
@@ -103,8 +114,5 @@ public class Client
             // TODO Auto-generated catch block
             e.printStackTrace();
         }
-
-
     }
-
 }

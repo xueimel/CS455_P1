@@ -94,21 +94,21 @@ class ServerConnection extends Thread
         }
     }
 
-    private String getRoom(Socket client){
-        int index=0;
-        for (Object mapElement: waiter.rooms.keySet()){
-            LinkedList thing = (LinkedList) waiter.rooms.get(mapElement);
-            for (Object potentialClient: thing) {
-                if (potentialClient==client){
-                    System.out.println("CLIENT IN A ROOM");
-                    return (String) waiter.rooms.get(index);
-                }
-                index++;
-            }
-        }
-        System.err.println("CLIENT WAS NOT ABLE TO BE LOCATED IN A ROOM");
-        return "Client not in room";
-    }
+//    private String getRoom(Socket client){
+//        int index=0;
+//        for (Object mapElement: waiter.rooms.keySet()){
+//            LinkedList thing = (LinkedList) waiter.rooms.get(mapElement);
+//            for (Object potentialClient: thing) {
+//                if (potentialClient==client){
+//                    System.out.println("CLIENT IN A ROOM");
+//                    return (String) waiter.rooms.get(index);
+//                }
+//                index++;
+//            }
+//        }
+//        System.err.println("CLIENT WAS NOT ABLE TO BE LOCATED IN A ROOM");
+//        return "Client not in room";
+//    }
 
     private boolean inRoom(Socket client){
         for (Object mapElement: waiter.rooms.keySet()){
@@ -297,10 +297,22 @@ class ServerConnection extends Thread
                     out.writeObject(new Message("YOU HAVE SUCCESSFULLY QUIT"));
                     out.flush();
                     //disconnect socket
-//                    client.close(); TODO once client side is figured out, should be able to do this
+//                    client.close();
                     System.out.println("CLIENT QUITING " + client);
                 }
                 else if (command.command.contains("/stats")) {
+                    String sb = "";
+                    sb += "STATS:\n===============================";
+                    sb += "\nNUM OF CLIENTS " + waiter.clients.size();
+                    sb += "\nNUM OF ROOMS " + waiter.rooms.size();
+//                    sb += "\nNAMES " + waiter.names.keySet(); //TODO MAYBE IMPLEMENT THIS
+//                    for (Object key: waiter.names.keySet()) {
+//                        sb += (String) key;
+//                    }
+                    out.writeObject(new Message(sb));
+                    out.flush();
+                    System.out.println("WROTE STATS TO CLIENT " + client);
+
                     //TODO print off len list in rooms
                     //num of clients connected
                     //potentially timer stats

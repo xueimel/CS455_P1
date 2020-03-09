@@ -8,6 +8,7 @@ public class ThreadedWriter extends Thread {
     private Object object;
     private ObjectInputStream in;
     private boolean newObject = false;
+    private boolean killed = false;
 
 
     public ThreadedWriter(Socket conn, ObjectInputStream in){
@@ -19,7 +20,7 @@ public class ThreadedWriter extends Thread {
 
     }
     public void run() {
-        while(true) {
+        while(!killed && !Thread.currentThread().isInterrupted()) {
             try {
                 this.object = in.readObject();
                 newObject = true;
@@ -27,11 +28,15 @@ public class ThreadedWriter extends Thread {
                 System.out.println(e);
             }
         }
+        System.out.println("EXITED WRITER");
     }
     public boolean newObject(){
         return newObject;
     }
+    public void kill(){
+        killed = true;
 
+    }
     public Object getObject(){
         newObject = false;
         return object;

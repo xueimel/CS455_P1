@@ -2,6 +2,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.util.Scanner;
 
 
@@ -18,11 +19,11 @@ public class Client
 
         try {
             //ask client to connect --IRC
-            scan= new Scanner(System.in);
+            scan = new Scanner(System.in);
             System.out.println("Use \"/connect <servername>\" command to start ChatService");
             host_name = scan.nextLine().substring(9);
 
-            IRC request_conn = new IRC("/connect "+host_name); // Setup IRC
+            IRC request_conn = new IRC("/connect " + host_name); // Setup IRC
             // sysout ctrl-spc
 
             Socket connection = new Socket(host_name, port);
@@ -34,10 +35,10 @@ public class Client
             out.flush();
             Object obj = in.readObject();
 
-            if (obj instanceof Message){
-                Message mess = (Message)(obj);
+            if (obj instanceof Message) {
+                Message mess = (Message) (obj);
                 System.out.println(mess.getString());
-            }else{
+            } else {
                 System.out.println("Bad Object Error. Exiting");
                 System.exit(-1);
             }
@@ -53,25 +54,24 @@ public class Client
                 thread.sleep(500); // IDK WHY, but we need to sleep this in order to get it to work
                 if (reader.hasInput()) { // TODO some of this logic could be replaced by using locks.
                     String input = reader.getInput();
-                    if (input.contains("/")){
+                    if (input.contains("/")) {
                         IRC comm = new IRC(input);
-                        if (comm.command.equals("/quit")){
+                        if (comm.command.equals("/quit")) {
                             out.writeObject(comm);
                             out.flush();
                             thread.sleep(500);
-                            Message finalMess = (Message)writer.getObject();
+                            Message finalMess = (Message) writer.getObject();
                             System.out.println(finalMess.getString());
                             reader.kill();
                             thread.interrupt();
                             writer.kill();
                             connection.close();
                             break;
-                        }
-                        else{
+                        } else {
                             out.writeObject(comm);
                             out.flush();
                         }
-                    }else{
+                    } else {
                         Message mess = new Message(reader.getInput());
                         out.writeObject(mess);
                         out.flush();
@@ -82,10 +82,10 @@ public class Client
                     obj = writer.getObject();
                     if (obj instanceof Message) {
                         Message mess = ((Message) obj);
-                        if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")){
+                        if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")) {
                             break;
                         }
-                        if (mess.getString().equals("ServerTimeout")){
+                        if (mess.getString().equals("ServerTimeout")) {
                             System.out.println("Server Timeout Occurred. Please Restart Client");
                             reader.kill();
                             thread.interrupt();
@@ -101,6 +101,11 @@ public class Client
             System.out.println("END");
 
             System.exit(0); //hack because I cant get the threadedReader to close
+        }catch (SocketTimeoutException e){
+            System.out.println("Server does not exist or could not connect" + e); // I/O error
+
+        } catch (ArrayIndexOutOfBoundsException e){
+            System.out.println("\"Usage: java Client <servername> <port#>\"");
         } catch (IOException e) {
             System.out.println("Server does not exist or could not connect" + e); // I/O error
         } catch (ClassNotFoundException e2) {

@@ -55,8 +55,11 @@ public class Client
                     String input = ts.getInput();
                     if (input.contains("/")){
                         IRC comm = new IRC(input);
-                        out.writeObject(comm);
-                        out.flush();
+                        
+                            out.writeObject(comm);
+                            out.flush();
+                        
+                        
                     }else{
                         Message mess = new Message(ts.getInput());
                         out.writeObject(mess);

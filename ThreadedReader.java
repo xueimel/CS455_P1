@@ -15,7 +15,7 @@ public class ThreadedReader extends Thread{
                 ret_val = darkly.nextLine();
             }
         }
-        System.out.println("EXITED READER");
+//        System.out.println("EXITED READER");
     }
     public String getInput(){
         input = false;

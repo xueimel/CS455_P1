@@ -32,7 +32,7 @@ public class ChatServer {
             }
         };
         timer = new Timer();
-        timer.schedule(tt,5000, 5000); //scheduling timer for 20s
+        timer.schedule(tt,500000, 500000); //scheduling timer for 20s
         ss = new ServerSocket(port, debugLevel);
         System.out.println("Server Running");
     }
@@ -100,14 +100,15 @@ class ServerConnection extends Thread
                 waiter.tt = new TimerTask(){
                     public void run() {
                         System.out.println("waiting for command timer");
-                        for (Object r : waiter.rooms.keySet()) {
-                            LinkedList thing = waiter.rooms.get(r);
-                            for (Object c : thing) {
-                                if (c == client) {
-                                    // quit all clients
-                                    //make quit a method
-                                    handleClientObject(new IRC("/serverTimeout"), client);
-                                }
+                        for (ObjectOutputStream out : waiter.clients.values()) {
+                            try {
+                                out.writeObject(new Message("ServerTimeout"));
+                                out.flush();
+                                Thread.sleep(2000);
+
+                            }catch (IOException | InterruptedException e){
+                                System.out.println(e);
+
                             }
                         }
                         System.exit(0);
@@ -216,7 +217,20 @@ class ServerConnection extends Thread
                 IRC command = ((IRC) obj);  // got command from client
                 logger.log(Level.INFO,"COMMAND " + command.command);
 
-
+                if (command.command.contains("/serverTimeout")){
+                    //TODO ADD LOGGER STATEMENTS
+                    System.out.println("SERVERTIMEOUT KILLING THE THING");
+                    Message m;
+                    m = new Message("ServerTimeout");
+                    out.writeObject(m);
+                    out.flush();
+                    try {
+                        currentThread().sleep(1000);
+                    }
+                    catch(InterruptedException e){
+                        System.out.println(e);
+                    }
+                }
                 if (command.command.contains("/join")){
                     // or with addition of clientRoom you could just see if the client exists in the list
                     boolean in = inRoom(client);

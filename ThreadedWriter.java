@@ -28,7 +28,7 @@ public class ThreadedWriter extends Thread {
                 System.out.println(e);
             }
         }
-        System.out.println("EXITED WRITER");
+//        System.out.println("EXITED WRITER");
     }
     public boolean newObject(){
         return newObject;

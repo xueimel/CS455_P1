@@ -13,7 +13,7 @@ public class Client
     Object lock = new Object();
 
 
-    public Client(String host_name, int port) throws InterruptedException{
+    public Client (String host_name, int port) throws InterruptedException{
         this.port = port;
 
         try {
@@ -81,9 +81,16 @@ public class Client
                 if (writer.newObject()) {// TODO some of this logic could be replaced by using locks.
                     obj = writer.getObject();
                     if (obj instanceof Message) {
-                        // Needs to handle message transition and user stdin (THREAD?)
                         Message mess = ((Message) obj);
                         if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")){
+                            break;
+                        }
+                        if (mess.getString().equals("ServerTimeout")){
+                            System.out.println("Server Timeout Occurred. Please Restart Client");
+                            reader.kill();
+                            thread.interrupt();
+                            writer.kill();
+                            connection.close();
                             break;
                         }
                         System.out.println(mess.getString());
@@ -100,6 +107,7 @@ public class Client
             System.out.println(e2); // Unknown type of response object
         }
     }
+
     public static void main(String args[]) {
         System.out.println(args.length);
         if (args.length != 2) {

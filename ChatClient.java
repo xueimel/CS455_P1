@@ -5,11 +5,11 @@ import java.net.Socket;
 import java.util.Scanner;
 
 
-public class Client
+public class ChatClient
 {
     private int port;
 
-    private Client (int port) {
+    private ChatClient(int port) {
         this.port = port;
     }
 
@@ -95,7 +95,7 @@ public class Client
             System.out.println("Server does not exist or could not connect. Please retry"); // I/O error
             return 0;
         } catch (StringIndexOutOfBoundsException e){
-            System.out.println("\"Usage: java Client <servername> <port#>\"\n Please Retry");
+            System.out.println("\"Usage: java ChatClient <servername> <port#>\"\n Please Retry");
             return 0;
         } catch (ClassNotFoundException e2) {
             System.out.println("Serialization Error. Please retry "); // Unknown type of response object
@@ -108,13 +108,13 @@ public class Client
 
     public static void main(String args[]) {
         if (args.length != 1) {
-            System.err.println("Usage: java Client <port#>"); // local host
+            System.err.println("Usage: java ChatClient <port#>"); // local host
             System.exit(1);
         }
 
         try {
             Scanner darkly = new Scanner(System.in);
-            Client client = new Client(Integer.parseInt(args[0]));
+            ChatClient client = new ChatClient(Integer.parseInt(args[0]));
             int ret_val = client.run();
 
             if (ret_val == 0) { // allow client to rerun if not odd return value
@@ -124,7 +124,7 @@ public class Client
                     val = darkly.nextLine();
 
                     if (val.equals("yes")) {
-                        client = new Client(Integer.parseInt(args[0]));
+                        client = new ChatClient(Integer.parseInt(args[0]));
                         ret_val = client.run();
                     } else { //they said anything other than "yes"
                         System.out.println("Exiting client.");

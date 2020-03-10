@@ -1,10 +1,3 @@
-Project number and title, team members, course number and title, semester and year.
-– A file/folder manifest to guide reading through the code.
-– A section on building and running the server/clients.
-– A section on how you tested it.
-– A section on observations/reflection on your development process and the roles of each team
-members.
-
 P1 - ChatServer
 CS 455 Distributed Systems
 Spring 2020

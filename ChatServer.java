@@ -139,7 +139,6 @@ class ServerConnection extends Thread {
         waiter.timer.schedule(waiter.tt, 50000, 50000);
     }
 
-
     private boolean inRoom(Socket client) {
         for (Object key : waiter.rooms.keySet()) {
             LinkedList thing = waiter.rooms.get(key);

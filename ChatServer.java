@@ -1,6 +1,3 @@
-import com.sun.xml.internal.ws.policy.privateutil.PolicyUtils;
-import jdk.nashorn.internal.runtime.options.LoggingOption;
-
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +10,6 @@ public class ChatServer {
     public Map<String, LinkedList<Socket>> rooms; // Room: [participants]
     public Map<Socket, ObjectOutputStream> clients;
     public Map<Socket, String> clientRoom;
-    public boolean inServer = false;
     private int debugLevel;
     private static ServerSocket ss;
     public TimerTask tt;

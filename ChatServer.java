@@ -14,6 +14,7 @@ public class ChatServer {
     private static ServerSocket ss;
     public TimerTask tt;
     public Timer timer;
+    public ShutDown sd;
 
     private ChatServer(int port, int debugLevel) throws IOException {
         Logger serverLog = Logger.getLogger("SERVER LOG");
@@ -22,8 +23,9 @@ public class ChatServer {
         rooms = Collections.synchronizedMap(new HashMap<>());
         clients = Collections.synchronizedMap(new HashMap<>());
         clientRoom = Collections.synchronizedMap(new HashMap<>());
+        sd = new ShutDown();
 
-
+        Runtime.getRuntime().addShutdownHook(sd);
         tt = new TimerTask() {
             public void run() {
                 serverLog.log(Level.INFO, "TIMER INITIALIZED; NO CLIENTS YET");
@@ -33,6 +35,7 @@ public class ChatServer {
         timer = new Timer();
         timer.schedule(tt, 500000, 500000); //scheduling timer for 5 min
         ss = new ServerSocket(port, debugLevel);
+//        Runtime.getRuntime().removeShutdownHook(sd);
         System.out.println("Server Running");
     }
 
@@ -46,6 +49,7 @@ public class ChatServer {
             while (true) {
                 client = ss.accept();
                 names.put(client, "anonymous");
+                Runtime.getRuntime().removeShutdownHook(sd);
                 new ServerConnection(client, this, debugLevel).start();
             }
         } catch (IOException e) {
@@ -82,15 +86,17 @@ class ServerConnection extends Thread {
         this.waiter = server;
         this.client = client;
         setPriority(NORM_PRIORITY - 1);
+
     }
 
     public void run() {
         try {
+
+            Runtime.getRuntime().addShutdownHook(new ShutDown(this));
             ObjectOutputStream out = new ObjectOutputStream(client.getOutputStream());
             ObjectInputStream in = new ObjectInputStream(client.getInputStream());
 
             waiter.clients.put(client, out);
-            //TODO take input on client side to make them actually type in the connection.
             logger.log(Level.INFO, "Connection with client " + client.getInetAddress().getHostAddress());
             out.writeObject(new Message("Attempting to create connection...")); //if you remove this line, the output stream will fail ahead.
 
@@ -104,9 +110,23 @@ class ServerConnection extends Thread {
                 logger.log(Level.SEVERE, err.toString());
             }
         } catch (IOException err) {
-            logger.log(Level.SEVERE, "I/O error " + err); // I/O error
+            logger.log(Level.WARNING, "I/O error " + err); // I/O error
         } catch (ClassNotFoundException e) {
-            logger.log(Level.SEVERE, e.toString()); // Unknown type of request object
+            logger.log(Level.WARNING, e.toString()); // Unknown type of request object
+        }
+    }
+
+    public void shutDownHook() {
+        logger.log(Level.SEVERE, "FORCED SHUTDOWN");
+        for (ObjectOutputStream out : waiter.clients.values()) {
+            try {
+                out.writeObject(new Message("ServerTimeout"));
+                out.flush();
+                Thread.sleep(1000);
+                out.close();
+            } catch (IOException | InterruptedException e) {
+//                        System.out.println(e);
+            }
         }
     }
 
@@ -120,10 +140,10 @@ class ServerConnection extends Thread {
                     try {
                         out.writeObject(new Message("ServerTimeout"));
                         out.flush();
-                        Thread.sleep(1000);
+                        Thread.sleep(1000); // give client time to get duckies in a row
                         out.close();
                     } catch (IOException | InterruptedException e) {
-                        System.out.println(e);
+//                        System.out.println(e);
                     }
                 }
                 logger.log(Level.SEVERE, "EXITING SERVER");
@@ -132,11 +152,11 @@ class ServerConnection extends Thread {
         };
         waiter.timer.cancel();
         waiter.timer = new Timer();
-        waiter.timer.schedule(waiter.tt, 50000, 50000);
+        waiter.timer.schedule(waiter.tt, 500000, 500000);
     }
 
     private boolean inRoom(Socket client) {
-        for (Object key : waiter.rooms.keySet()) {
+        for (String key : waiter.rooms.keySet()) {
             LinkedList thing = waiter.rooms.get(key);
             for (Object s : thing) {
                 if (s == client) {
@@ -149,9 +169,8 @@ class ServerConnection extends Thread {
     }
 
     private String getClientNick(Socket client) {
-        for (Object key : waiter.names.keySet()) {
-            Socket found_client = (Socket) (key);
-            if (found_client == client) {
+        for (Socket key : waiter.names.keySet()) {
+            if (key == client) {
                 logger.log(Level.INFO, "IN getClientNick(); GOT NICKNAME " + key);
                 return waiter.names.get(key);
             }
@@ -161,7 +180,6 @@ class ServerConnection extends Thread {
     }
 
     private Message join(IRC command) {
-        // or with addition of clientRoom you could just see if the client exists in the list
         boolean in = inRoom(client);
         Message m;
         if (!in) { // make sure the client is only in one room.
@@ -337,7 +355,7 @@ class ServerConnection extends Thread {
                     out.writeObject(m); // get confirmation back to client before cleanup
                     out.flush();
                     //disconnect socket
-                    client.close();
+//                    client.close();
                     return;
                 } else if (command.command.contains("/stats")) {
                     m = stats();
@@ -375,7 +393,7 @@ class ServerConnection extends Thread {
                             out.flush();
                         }
                     }
-                } else { // they were not in a room
+                } else { // they attempted to enter message but were not in a room
                     out = waiter.clients.get(client);
                     out.writeObject(new Message("you must join a room to enter a message [/join <room name>]"));
                     out.flush();

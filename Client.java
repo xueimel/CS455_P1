@@ -1,32 +1,31 @@
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 
 public class Client
 {
     private int port;
-    private static String host_name;
 
 
     private Client (int port) {
         this.port = port;
+
     }
 
-    private int run() throws InterruptedException, SocketException{
+    private int run() throws InterruptedException{
         try {
             Scanner scan = new Scanner(System.in);
             //ask client to connect --IRC
             System.out.println("Use \"/connect <servername>\" command to start ChatService");
 
-            host_name = scan.nextLine().substring(9);
+            String host_name = scan.nextLine().substring(9);
 
             IRC request_conn = new IRC("/connect " + host_name); // Setup IRC
-            // sysout ctrl-spc
 
             Socket connection = new Socket(host_name, port);
             ObjectOutputStream out = new ObjectOutputStream(connection.getOutputStream());
@@ -47,6 +46,7 @@ public class Client
 
             ThreadedWriter writer = new ThreadedWriter(connection, in);
             ThreadedReader reader = new ThreadedReader();
+            reader.setScanner(scan);
             Thread thread = new Thread(reader);
             thread.start();
             Thread threadIn = new Thread(writer);
@@ -62,12 +62,7 @@ public class Client
                                 out.writeObject(comm);
                                 out.flush();
                                 System.out.println("Quiting ChatClient");
-                                reader.kill();
-                                writer.kill();
-                                out.close();
-                                in.close();
-                                Thread.sleep(2000); // give server a second to clean up
-                                connection.close();
+
                                 System.out.println("\nPlease Press Return Before Entering the Following:");
                                 return 0;
                             } else {
@@ -86,15 +81,18 @@ public class Client
                         if (obj instanceof Message) {
                             Message mess = ((Message) obj);
                             if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")) {
+                                reader.kill();
+                                writer.kill();
+
+                                Thread.sleep(2000); // give server a second to clean up
+                                connection.close();
                                 return 0;
                             }
                             if (mess.getString().equals("ServerTimeout")) {
                                 reader.kill();
-                                thread.interrupt();
                                 writer.kill();
-                                out.close();
-                                in.close();
-                                System.out.println("Server Timeout Occurred. PLEASE PRESS ENTER TO CLEAR THE CONSOLE BEFORE ANSWERING THE FOLLOWING.");
+
+                                System.out.println("The Server has closed. PLEASE PRESS ENTER TO CLEAR THE CONSOLE BEFORE ANSWERING THE FOLLOWING.");
                                 connection.close();
                                 return 0;
                             }
@@ -102,7 +100,7 @@ public class Client
                         }
                     }
                 }
-        }catch (IOException e){
+        } catch (IOException e){
             System.out.println("Server does not exist or could not connect. Please retry"); // I/O error
             return 0;
         } catch (StringIndexOutOfBoundsException e){
@@ -118,7 +116,6 @@ public class Client
     }
 
     public static void main(String args[]) {
-        System.out.println(args.length);
         if (args.length != 1) {
             System.err.println("Usage: java Client <port#>"); // local host
             System.exit(1);
@@ -148,9 +145,6 @@ public class Client
             System.exit(0);
         } catch (NumberFormatException | InterruptedException e) {
             e.printStackTrace();
-        }
-        catch (SocketException e){
-            System.out.println("CAUGHT");
         }
     }
 }

@@ -15,26 +15,28 @@ public class ThreadedWriter extends Thread {
         setPriority(NORM_PRIORITY - 1);
         this.sock = conn;
         this.in = in;
-
-
     }
+
+
     public void run() {
         while(!killed && !Thread.currentThread().isInterrupted()) {
             try {
                 this.object = in.readObject();
                 newObject = true;
             } catch (IOException | ClassNotFoundException e) {
-                System.out.println(e);
+
             }
         }
     }
+
     public boolean newObject(){
         return newObject;
     }
+
     public void kill(){
         killed = true;
-
     }
+
     public Object getObject(){
         newObject = false;
         return object;

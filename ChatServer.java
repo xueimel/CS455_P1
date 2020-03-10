@@ -14,7 +14,7 @@ public class ChatServer {
     private static ServerSocket ss;
     public TimerTask tt;
     public Timer timer;
-    public ShutDown sd;
+    private ShutDown sd;
 
     private ChatServer(int port, int debugLevel) throws IOException {
         Logger serverLog = Logger.getLogger("SERVER LOG");

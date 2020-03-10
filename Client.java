@@ -2,8 +2,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.net.SocketException;
-import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 
@@ -11,10 +9,8 @@ public class Client
 {
     private int port;
 
-
     private Client (int port) {
         this.port = port;
-
     }
 
     private int run() throws InterruptedException{
@@ -62,8 +58,6 @@ public class Client
                                 out.writeObject(comm);
                                 out.flush();
                                 System.out.println("Quiting ChatClient");
-
-                                System.out.println("\nPlease Press Return Before Entering the Following:");
                                 return 0;
                             } else {
                                 out.writeObject(comm);
@@ -83,16 +77,13 @@ public class Client
                             if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")) {
                                 reader.kill();
                                 writer.kill();
-
-                                Thread.sleep(2000); // give server a second to clean up
                                 connection.close();
                                 return 0;
                             }
                             if (mess.getString().equals("ServerTimeout")) {
                                 reader.kill();
                                 writer.kill();
-
-                                System.out.println("The Server has closed. PLEASE PRESS ENTER TO CLEAR THE CONSOLE BEFORE ANSWERING THE FOLLOWING.");
+                                System.out.println("The Server has closed. PLEASE PRESS ENTER TO CLEAR THE CONSOLE BEFORE RESPONDING TO THE FOLLOWING.");
                                 connection.close();
                                 return 0;
                             }

@@ -8,21 +8,20 @@ public class ThreadedReader extends Thread{
     private boolean killed = false;
 
     @Override
-    public void run() {
+    public  void run() {
         while(!killed && !Thread.currentThread().isInterrupted()) {
             if (darkly.hasNextLine() && !killed) {
                 input = true;
                 ret_val = darkly.nextLine();
             }
         }
-//        System.out.println("EXITED READER");
     }
-    public String getInput(){
+    public  String getInput(){
         input = false;
         return ret_val;
     }
 
-    public void kill(){
+    public  void kill(){
         killed=true;
 //        darkly.close();
     }

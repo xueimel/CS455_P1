@@ -12,11 +12,10 @@ public class ThreadedWriter extends Thread {
 
 
     public ThreadedWriter(Socket conn, ObjectInputStream in){
-//        try {
         setPriority(NORM_PRIORITY - 1);
         this.sock = conn;
         this.in = in;
-//            in = new ObjectInputStream(conn.getInputStream());
+
 
     }
     public void run() {
@@ -28,7 +27,6 @@ public class ThreadedWriter extends Thread {
                 System.out.println(e);
             }
         }
-//        System.out.println("EXITED WRITER");
     }
     public boolean newObject(){
         return newObject;

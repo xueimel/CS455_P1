@@ -1,26 +1,28 @@
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
+import java.net.SocketException;
 import java.util.Scanner;
 
 
 public class Client
 {
+    private int port;
     private static String host_name;
-    Scanner scan;
-    int port;
-    Object lock = new Object();
 
 
-    public Client (String host_name, int port) throws InterruptedException{
+    private Client (int port) {
         this.port = port;
+    }
 
+    private int run() throws InterruptedException, SocketException{
         try {
+            Scanner scan = new Scanner(System.in);
             //ask client to connect --IRC
-            scan = new Scanner(System.in);
             System.out.println("Use \"/connect <servername>\" command to start ChatService");
+
             host_name = scan.nextLine().substring(9);
 
             IRC request_conn = new IRC("/connect " + host_name); // Setup IRC
@@ -51,81 +53,104 @@ public class Client
             threadIn.start();
 
             while (true) {
-                thread.sleep(500); // IDK WHY, but we need to sleep this in order to get it to work
-                if (reader.hasInput()) { // TODO some of this logic could be replaced by using locks.
-                    String input = reader.getInput();
-                    if (input.contains("/")) {
-                        IRC comm = new IRC(input);
-                        if (comm.command.equals("/quit")) {
-                            out.writeObject(comm);
-                            out.flush();
-                            thread.sleep(500);
-                            Message finalMess = (Message) writer.getObject();
-                            System.out.println(finalMess.getString());
-                            reader.kill();
-                            thread.interrupt();
-                            writer.kill();
-                            connection.close();
-                            break;
+                    Thread.sleep(500);
+                    if (reader.hasInput()) { // there is new user input
+                        String input = reader.getInput();
+                        if (input.contains("/")) {
+                            IRC comm = new IRC(input);
+                            if (comm.command.equals("/quit")) {
+                                out.writeObject(comm);
+                                out.flush();
+                                System.out.println("Quiting ChatClient");
+                                reader.kill();
+                                writer.kill();
+                                out.close();
+                                in.close();
+                                Thread.sleep(2000); // give server a second to clean up
+                                connection.close();
+                                System.out.println("\nPlease Press Return Before Entering the Following:");
+                                return 0;
+                            } else {
+                                out.writeObject(comm);
+                                out.flush();
+                            }
                         } else {
-                            out.writeObject(comm);
+                            Message mess = new Message(reader.getInput());
+                            out.writeObject(mess);
                             out.flush();
                         }
-                    } else {
-                        Message mess = new Message(reader.getInput());
-                        out.writeObject(mess);
-                        out.flush();
+                    }
+
+                    if (writer.newObject()) {// There is new server input
+                        obj = writer.getObject();
+                        if (obj instanceof Message) {
+                            Message mess = ((Message) obj);
+                            if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")) {
+                                return 0;
+                            }
+                            if (mess.getString().equals("ServerTimeout")) {
+                                reader.kill();
+                                thread.interrupt();
+                                writer.kill();
+                                out.close();
+                                in.close();
+                                System.out.println("Server Timeout Occurred. PLEASE PRESS ENTER TO CLEAR THE CONSOLE BEFORE ANSWERING THE FOLLOWING.");
+                                connection.close();
+                                return 0;
+                            }
+                            System.out.println(mess.getString());
+                        }
                     }
                 }
-
-                if (writer.newObject()) {// TODO some of this logic could be replaced by using locks.
-                    obj = writer.getObject();
-                    if (obj instanceof Message) {
-                        Message mess = ((Message) obj);
-                        if (mess.getString().equals("YOU HAVE SUCCESSFULLY QUIT")) {
-                            break;
-                        }
-                        if (mess.getString().equals("ServerTimeout")) {
-                            System.out.println("Server Timeout Occurred. Please Restart Client");
-                            reader.kill();
-                            thread.interrupt();
-                            writer.kill();
-                            connection.close();
-                            break;
-                        }
-                        System.out.println(mess.getString());
-                    }
-                }
-            }
-
-            System.out.println("END");
-
-            System.exit(0); //hack because I cant get the threadedReader to close
-        }catch (SocketTimeoutException e){
-            System.out.println("Server does not exist or could not connect" + e); // I/O error
-
-        } catch (ArrayIndexOutOfBoundsException e){
-            System.out.println("\"Usage: java Client <servername> <port#>\"");
-        } catch (IOException e) {
-            System.out.println("Server does not exist or could not connect" + e); // I/O error
+        }catch (IOException e){
+            System.out.println("Server does not exist or could not connect. Please retry"); // I/O error
+            return 0;
+        } catch (StringIndexOutOfBoundsException e){
+            System.out.println("\"Usage: java Client <servername> <port#>\"\n Please Retry");
+            return 0;
         } catch (ClassNotFoundException e2) {
-            System.out.println(e2); // Unknown type of response object
+            System.out.println("Serialization Error. Please retry "); // Unknown type of response object
+            return 0;
+        } catch (InterruptedException e){
+            System.out.println("THREAD BROKEN");
         }
+        return 0;
     }
 
     public static void main(String args[]) {
         System.out.println(args.length);
-        if (args.length != 2) {
-            System.err.println("Usage: java Client <servername> <port#>"); // local host
+        if (args.length != 1) {
+            System.err.println("Usage: java Client <port#>"); // local host
             System.exit(1);
         }
 
         try {
-            Client client = new Client(args[0], Integer.parseInt(args[1]));
-            //TODO Add client.run()
+            Scanner darkly = new Scanner(System.in);
+            Client client = new Client(Integer.parseInt(args[0]));
+            int ret_val = client.run();
+
+            if (ret_val == 0) { // allow client to rerun if not odd return value
+                String val = "yes";
+                while (val.equals("yes") && ret_val == 0) {
+                    System.out.println("Would you like to restart the client? yes or no");
+                    val = darkly.nextLine();
+
+                    if (val.equals("yes")) {
+                        client = new Client(Integer.parseInt(args[0]));
+                        ret_val = client.run();
+                    } else { //they said anything other than "yes"
+                        System.out.println("Exiting client.");
+                        System.exit(0);
+                    }
+                }
+            }
+            darkly.close();
+            System.exit(0);
         } catch (NumberFormatException | InterruptedException e) {
-            // TODO Auto-generated catch block
             e.printStackTrace();
+        }
+        catch (SocketException e){
+            System.out.println("CAUGHT");
         }
     }
 }

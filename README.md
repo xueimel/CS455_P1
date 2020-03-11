@@ -1,7 +1,11 @@
 P1 - ChatServer
+
 CS 455 Distributed Systems
+
 Spring 2020
+
 Hailee Kiesecker
+
 Landon Lemieux
 -----------------
 

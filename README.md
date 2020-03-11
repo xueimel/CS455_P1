@@ -66,7 +66,7 @@ Landon Lemieux
 ------------------------------------------
 ###Start the Chat Server using the following commands:
 terminal 01:
-```javac *.java``` (compile all .java files)
+```run build.xml as an ant build ``` (compile all .java files)
 ```java ChatServer -p 5005 -d 1``` (run the ChatServer) where ```5005``` is the port number and ```1``` is the debug level. Debug level 0 gives you all messages, where 
    debug level 1 will print only errors and a few statuses (like ```server running``` or ```server shutting down```)
 
@@ -77,6 +77,8 @@ after which you can utilize the ChatServer using the
 following commands in terminal 02:
 ```/connect localhost``` you can now send messages to other clients  (if present).
 ```/help``` will print all IRC usage commands
+
+
 
 
 ##Testing:

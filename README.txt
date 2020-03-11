@@ -7,57 +7,71 @@ Landon Lemieux
 
 Guide to Reading Through Code:
 ------------------------------------------
-Server.java :
-  public ChatServer(int port, int debugLevel) - houses a TimerTask, initalizes needed hashMaps.
-  private synchronized void runServer() - opens a socket connection to the server, accepts clients.
-  ServerConnection(Socket client, ChatServer server, int loglevel) - sets server/client, sets debug level and priority.
-  public void run() - intitalizes input and output stream, houses a TimerTask for 5 minute idiel, calls handleClientObject.
-  public void shutDownHook() - closes down all clients gracefully.
-  private void maintain(ObjectInputStream in)-closes clients down gracefully if sever is inactive for 5 minutes.
-  private boolean inRoom(Socket client) - tells the server if a client is in a room.
-  private String getClientNick(Socket client) - sees if the client has set a nickname
-  private Message join(IRC command) - executes /join IRC , joins given room.
-  private Message leave(IRC command) -executes /leave IRC , leaves given room.
-  private Message list() - executes /list lists IRC , out rooms.
-  private Message connect() - executes /connect IRC , connects to given server.
-  private Message nick(IRC command) - executes /nick IRC , replaces clients current name with a new one.
-  private Message quit() - executes /quit IRC , gracefully closes client.
-  private Message stats() - executes /stats IRC , shows the client different stats.
-  private Message help() - executes /help IRC , shows the client usage statements. 
-  private Message timeout() - logs if there is a server timeout.
-  private void handleClientObject(Object obj, Socket client) - handles the message or IRC object
+Classes:
+  Server.java :
+    public ChatServer(int port, int debugLevel) - houses a TimerTask, initalizes needed hashMaps.
+    private synchronized void runServer() - opens a socket connection to the server, accepts clients.
+    ServerConnection(Socket client, ChatServer server, int loglevel) - sets server/client, sets debug level and priority.
+    public void run() - intitalizes input and output stream, houses a TimerTask for 5 minute idiel, calls handleClientObject.
+    public void shutDownHook() - closes down all clients gracefully.
+    private void maintain(ObjectInputStream in)-closes clients down gracefully if sever is inactive for 5 minutes.
+    private boolean inRoom(Socket client) - tells the server if a client is in a room.
+    private String getClientNick(Socket client) - sees if the client has set a nickname
+    private Message join(IRC command) - executes /join IRC , joins given room.
+    private Message leave(IRC command) -executes /leave IRC , leaves given room.
+    private Message list() - executes /list lists IRC , out rooms.
+    private Message connect() - executes /connect IRC , connects to given server.
+    private Message nick(IRC command) - executes /nick IRC , replaces clients current name with a new one.
+    private Message quit() - executes /quit IRC , gracefully closes client.
+    private Message stats() - executes /stats IRC , shows the client different stats.
+    private Message help() - executes /help IRC , shows the client usage statements. 
+    private Message timeout() - logs if there is a server timeout.
+    private void handleClientObject(Object obj, Socket client) - handles the message or IRC object
 
-Client.java :
-  public Client (String host_name, int port) - sets up connection to server handles if client is inputing a message or IRC
+  ChatClient.java :
+    public Client (int port) - sets up client for connection to server.
+    client.run() - Starts and ends connection with client.
+      Handles the logic for sending and recieving communications/commands between the client and server.
+      Instatiates insatances of ThreadedReader and ThreadedWriter in order to facilitate constant/continuous communications.
+    Main() - Launches client and facilitates 
+        
+   ShutDown.java : 
+     Overloaded constructor to facilitate shutdown hooks for server running with and without clients.
+     run() - calls method from the server to gracefully shutdown if clients are present. 
+     
+  ThreadReader.java: (Class for reading input from user)
+     public void run() - while the client is still running, read user input.
+     public String getInput() - return users input.
+     public void kill() - kills the ThreadedReader process, if called.
+     public boolean hasInput() - returns true if user input exists.
+     
+  ThreadWriter.java: (Class for reading from Server and writing to standard out)
+     public ThreadedWriter(Socket conn, ObjectInputStream in) - sets priority of writer, constructor
+     public void run() - while client is running continuously checks for server input
+     public boolean newObject() - returns true if the client got object from server
+     public void kill() - terminates writer loop
+     public Object getObject() - returns object sent from client.
 
 Objects:
-  IRC.java:
-    public IRC(String command) - sets command.
-  ThreadReader.java:
-     public void run() - while the client is still running read over the next input.
-     public String getInput() - gets the users input.
-     public void kill() - kills the running process if called.
-     public boolean hasInput() - returns true if input exists.
-  ThreadWriter.java:
-    public ThreadedWriter(Socket conn, ObjectInputStream in) - sets priority of writer, constructor
-    public void run() - while client is running sets input/object
-    public boolean newObject() - returns true if given input
-    public void kill() - terminates writer
-    public Object getObject() - returns clients input
-  Message.java:
-    public Message(String message) - sets message.
-    public String getString() - returns message as string.
+  IRC.java: (IRC Command Object)
+    public IRC(String command) - String of the appropriate command.
+
+  Message.java: (Message object to be passed back and forth between client and server)
+    public Message(String message) - sets message field.
+    public String getString() - returns message field as string.
 
 
 How to Build:
 ------------------------------------------
-You can build the Chat Server using the following commands:
+Start the Chat Server using the following commands:
 terminal 01:
-javac *.java
-java ChatServer -p 5005 -d 1
+```javac *.java``` (compile all .java files)
+```java ChatServer -p 5005 -d 1``` (run the ChatServer) where ```5005``` is the port number 
+   and ```1``` is the debug level. Debug level 0 gives you all messages, where 
+   debug level 1 will print only errors and a few statuses (like ```server running``` or ```server shutting down```)
 
 terminal 02:
-java Client localhost 5005
+```java ChatClient 5005```
 
 after which you can play with the ChatServer using the 
 following commands in terminal 02:

@@ -12,11 +12,20 @@ Server.java :
   private synchronized void runServer() - opens a socket connection to the server, accepts clients.
   ServerConnection(Socket client, ChatServer server, int loglevel) - sets server/client, sets debug level and priority.
   public void run() - intitalizes input and output stream, houses a TimerTask for 5 minute idiel, calls handleClientObject.
+  public void shutDownHook() - closes down all clients gracefully.
+  private void maintain(ObjectInputStream in)-closes clients down gracefully if sever is inactive for 5 minutes.
   private boolean inRoom(Socket client) - tells the server if a client is in a room.
   private String getClientNick(Socket client) - sees if the client has set a nickname
+  private Message join(IRC command) - executes /join IRC , joins given room.
+  private Message leave(IRC command) -executes /leave IRC , leaves given room.
+  private Message list() - executes /list lists IRC , out rooms.
+  private Message connect() - executes /connect IRC , connects to given server.
+  private Message nick(IRC command) - executes /nick IRC , replaces clients current name with a new one.
+  private Message quit() - executes /quit IRC , gracefully closes client.
+  private Message stats() - executes /stats IRC , shows the client different stats.
+  private Message help() - executes /help IRC , shows the client usage statements. 
+  private Message timeout() - logs if there is a server timeout.
   private void handleClientObject(Object obj, Socket client) - handles the message or IRC object
-  
-  //additional methods here after refactor ---LANDON
 
 Client.java :
   public Client (String host_name, int port) - sets up connection to server handles if client is inputing a message or IRC
@@ -101,7 +110,6 @@ additions and merge our different branches together into one. This was
 a very useful tool that we will use in the future on other programing 
 projects.
 
-//does this look alright?
 Landon was responsible for a lot of the logic going on within the IRC methods
 along with the refactoring and fixing of the quit command. Hailee was responsible
 for the implementation of the timer along with debugging/testing/cleaning

@@ -5,9 +5,9 @@ Hailee Kiesecker
 Landon Lemieux
 
 -----------------
-#Guide to Reading Through Code:
+# Guide to Reading Through Code:
 ------------------------------------------
-##Classes:
+## Classes:
 
   ###Server.java :
     public ChatServer(int port, int debugLevel) - houses a TimerTask, initalizes needed hashMaps.

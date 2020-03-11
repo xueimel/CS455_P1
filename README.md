@@ -1,7 +1,11 @@
 P1 - ChatServer
+
 CS 455 Distributed Systems
+
 Spring 2020
+
 Hailee Kiesecker
+
 Landon Lemieux
 
 -----------------
@@ -9,7 +13,7 @@ Landon Lemieux
 ------------------------------------------
 ## Classes:
 
-  ###Server.java :
+  ### Server.java :
     public ChatServer(int port, int debugLevel) - houses a TimerTask, initalizes needed hashMaps.
     private synchronized void runServer() - opens a socket connection to the server, accepts clients.
     ServerConnection(Socket client, ChatServer server, int loglevel) - sets server/client, sets debug level and priority.
@@ -29,42 +33,42 @@ Landon Lemieux
     private Message timeout() - logs if there is a server timeout.
     private void handleClientObject(Object obj, Socket client) - handles the message or IRC object
 
-  ###ChatClient.java :
+  ### ChatClient.java :
     public Client (int port) - sets up client for connection to server.
     client.run() - Starts and ends connection with client.
       Handles the logic for sending and recieving communications/commands between the client and server.
       Instatiates insatances of ThreadedReader and ThreadedWriter in order to facilitate constant/continuous communications.
     Main() - Launches client and facilitates 
         
-   ###ShutDown.java : 
+   ### ShutDown.java : 
      Overloaded constructor to facilitate shutdown hooks for server running with and without clients.
      run() - calls method from the server to gracefully shutdown if clients are present. 
      
-  ###ThreadReader.java: (Class for reading input from user)
+  ### ThreadReader.java: (Class for reading input from user)
      public void run() - while the client is still running, read user input.
      public String getInput() - return users input.
      public void kill() - kills the ThreadedReader process, if called.
      public boolean hasInput() - returns true if user input exists.
      
-  ###ThreadWriter.java: (Class for reading from Server and writing to standard out)
+  ### ThreadWriter.java: (Class for reading from Server and writing to standard out)
      public ThreadedWriter(Socket conn, ObjectInputStream in) - sets priority of writer, constructor
      public void run() - while client is running continuously checks for server input
      public boolean newObject() - returns true if the client got object from server
      public void kill() - terminates writer loop
      public Object getObject() - returns object sent from client.
 
-##Objects:
-  ###IRC.java: (IRC Command Object)
+## Objects:
+  ### IRC.java: (IRC Command Object)
     public IRC(String command) - String of the appropriate command.
 
-  ###Message.java: (Message object to be passed back and forth between client and server)
+  ### Message.java: (Message object to be passed back and forth between client and server)
     public Message(String message) - sets message field.
     public String getString() - returns message field as string.
 
 ------------------------------------------
-#How to Build:
+# How to Build:
 ------------------------------------------
-###Start the Chat Server using the following commands:
+### Start the Chat Server using the following commands:
 terminal 01:
 ```run build.xml as an ant build ``` (compile all .java files)
 ```java ChatServer -p 5005 -d 1``` (run the ChatServer) where ```5005``` is the port number and ```1``` is the debug level. Debug level 0 gives you all messages, where 
@@ -81,7 +85,7 @@ following commands in terminal 02:
 
 
 
-##Testing:
+## Testing:
 ------------------------------------------
 Throughout the process of creating this ChatServer application
 we incrementaly tested new features by staring up the sever
@@ -92,9 +96,9 @@ push our changes to our git repository and ask the other to also
 test out the functionality to be sure it could work outside of our local machine.
 
 
-##Observations and Reflection:
+## Observations and Reflection:
 ------------------------------------------
-###Landon Reflection
+### Landon Reflection
 This project was one of the more taxing faced recently in my CS career. 
 I found the openess of the implementation to be quite painful as I fell into
 many pitfalls during the implementation.
@@ -117,7 +121,7 @@ The project structure was much more than I originally anticipated, and because o
 that, I found myself refactoring a fair amount of code on the server side. I would
 have liked to do more, and clean the client side up as well, but time does not allow.
 
-###Hailee Reflection
+### Hailee Reflection
 Looking back at our code once all of our logic is in place made
 us realize that there could have been an easier way to implement all 
 of the IRC commands. If we had created individual methods for each 

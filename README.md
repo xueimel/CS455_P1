@@ -12,11 +12,16 @@ Landon Lemieux
 Guide to Reading Through Code:
 ------------------------------------------
 Classes:
+
   Server.java :
     public ChatServer(int port, int debugLevel) - houses a TimerTask, initalizes needed hashMaps.
+    
     private synchronized void runServer() - opens a socket connection to the server, accepts clients.
+    
     ServerConnection(Socket client, ChatServer server, int loglevel) - sets server/client, sets debug level and priority.
+    
     public void run() - intitalizes input and output stream, houses a TimerTask for 5 minute idiel, calls handleClientObject.
+    
     public void shutDownHook() - closes down all clients gracefully.
     private void maintain(ObjectInputStream in)-closes clients down gracefully if sever is inactive for 5 minutes.
     private boolean inRoom(Socket client) - tells the server if a client is in a room.
